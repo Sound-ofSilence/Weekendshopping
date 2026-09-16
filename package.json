@@ -1,0 +1,16 @@
+{
+  "name": "weekend-shopping",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Weekend Shopping 多商家入驻型综合电商平台（类淘宝）",
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "dev:api": "pnpm --filter @weekend-shopping/api start:dev",
+    "build:api": "pnpm --filter @weekend-shopping/api build",
+    "start:api": "pnpm --filter @weekend-shopping/api start:prod",
+    "test:api": "pnpm --filter @weekend-shopping/api test:e2e",
+    "lint:api": "pnpm --filter @weekend-shopping/api lint",
+    "prisma:generate": "pnpm --filter @weekend-shopping/api prisma:generate",
+    "prisma:migrate": "pnpm --filter @weekend-shopping/api prisma:migrate"
+  }
+}
