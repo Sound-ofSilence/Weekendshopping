@@ -3,9 +3,9 @@
 ## 已完成
 - [x] P0 脚手架与 Docker 基础（ES 暂时注释，等做到 P3 搜索模块时再补）
 - [x] P0 apps/api NestJS 后端初始化（Prisma / 统一响应 / 异常 / 日志+traceId / JWT+RBAC / 健康检查 / Swagger / Dockerfile / api 服务）
+- [x] P1 用户模块
 
 ## 待办
-- [ ] P1 用户模块
 - [ ] P2 商品模块
 - [ ] P3 搜索模块
 - [ ] P4 购物车与订单
