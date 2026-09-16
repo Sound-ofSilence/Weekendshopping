@@ -1,0 +1,31 @@
+# 项目固定规则
+
+## 项目
+Weekend Shopping - 多商家电商平台
+
+## 技术栈（不可更改）
+- 后端 NestJS + Prisma + PostgreSQL + Redis + RabbitMQ
+- 前端 Next.js 14 + TailwindCSS（买家端）/ React + Vite + Antd Pro（后台）
+- Monorepo 用 pnpm workspace
+- Docker 化部署
+
+## 铁律
+1. 不改技术栈、不加需求外功能
+2. 资金/库存必须事务 + 幂等
+3. 金额用 decimal
+4. 响应格式 { code, message, data, traceId }
+5. 每个接口必须写单测
+6. 密码 bcrypt，身份证 AES 加密
+
+## 严禁行为（每次对话都遵守）
+1. 严禁用终端命令读文件，必须用 read_files 工具
+2. 严禁自己跑命令（pnpm/docker/npm），用户会手动跑
+3. 修改已有文件时只输出 diff 或改动摘要，不要重印整个文件
+4. 遇到报错直接修复，不要反复尝试同一操作
+5. 一次对话只做一个模块
+6. 先输出文件清单，用户确认后再编码
+
+## 对话流程
+1. 用户给需求 → 你输出文件清单
+2. 用户回「开始」→ 你编码
+3. 遇到决策点，先问一句再决定

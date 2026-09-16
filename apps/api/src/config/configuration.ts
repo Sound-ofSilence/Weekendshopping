@@ -4,7 +4,8 @@ export interface AppConfig {
   databaseUrl: string;
   redis: { host: string; port: number; url: string };
   rabbitmq: { host: string; port: number; url: string };
-  jwt: { secret: string; expiresIn: string };
+  jwt: { secret: string; expiresIn: string; refreshExpiresIn: string };
+  aes: { key: string };
 }
 
 export default (): AppConfig => ({
@@ -24,5 +25,9 @@ export default (): AppConfig => ({
   jwt: {
     secret: process.env.JWT_SECRET ?? '',
     expiresIn: process.env.JWT_EXPIRES_IN ?? '7d',
+    refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? '30d',
+  },
+  aes: {
+    key: process.env.AES_KEY ?? '',
   },
 });

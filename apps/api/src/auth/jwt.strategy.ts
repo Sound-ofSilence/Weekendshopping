@@ -1,16 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { Role } from '../common/constants/roles.enum';
+import { ErrorCode, ErrorMessage } from '../common/constants/error-codes';
+import { AppException } from '../common/exceptions/app.exception';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
-
-interface JwtPayload {
-  sub: string;
-  role: Role;
-  iat?: number;
-  exp?: number;
-}
+import type { JwtPayload } from '../common/interfaces/jwt-payload.interface';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -23,6 +18,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   validate(payload: JwtPayload): AuthUser {
+    // 拒绝将 refreshToken 当作 accessToken 使用
+    if (payload.type === 'refresh') {
+      throw new AppException(ErrorCode.TOKEN_INVALID, ErrorMessage[ErrorCode.TOKEN_INVALID], HttpStatus.UNAUTHORIZED);
+    }
     return { userId: payload.sub, role: payload.role };
   }
 }

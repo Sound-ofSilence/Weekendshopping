@@ -12,6 +12,8 @@ import { TransformInterceptor } from './common/interceptors/transform.intercepto
 import { TraceIdMiddleware } from './common/middleware/trace-id.middleware';
 import configuration from './config/configuration';
 import { HealthModule } from './modules/health/health.module';
+import { UsersModule } from './modules/users/users.module';
+import { AddressesModule } from './modules/addresses/addresses.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RabbitMQModule } from './rabbitmq/rabbitmq.module';
 import { RedisModule } from './redis/redis.module';
@@ -43,6 +45,8 @@ const isTest = process.env.NODE_ENV === 'test';
     RabbitMQModule,
     AuthModule,
     HealthModule,
+    UsersModule,
+    AddressesModule,
   ],
   providers: [
     TraceIdMiddleware,

@@ -16,3 +16,73 @@ model SystemConfig {
 
   @@map("system_configs")
 }
+
+model User {
+  id           Int        @id @default(autoincrement())
+  phone        String     @unique
+  email        String?
+  passwordHash String     @map("password_hash")
+  nickname     String?
+  avatar       String?
+  gender       Int?
+  birthday     DateTime?
+  status       Int        @default(1)
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+  deletedAt    DateTime?  @map("deleted_at")
+
+  roles     UserRole[]
+  addresses UserAddress[]
+  realname  UserRealname?
+
+  @@map("users")
+}
+
+model UserRole {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  roleCode  String   @map("role_code")
+  scopeId   Int?     @map("scope_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleCode, scopeId])
+  @@index([userId])
+  @@map("user_roles")
+}
+
+model UserAddress {
+  id        Int       @id @default(autoincrement())
+  userId    Int       @map("user_id")
+  receiver  String    @map("receiver")
+  phone     String    @map("phone")
+  province  String    @map("province")
+  city      String    @map("city")
+  district  String    @map("district")
+  detail    String    @map("detail")
+  isDefault Boolean   @default(false) @map("is_default")
+  tag       String?   @map("tag")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("user_addresses")
+}
+
+model UserRealname {
+  id         Int       @id @default(autoincrement())
+  userId     Int       @unique @map("user_id")
+  realName   String    @map("real_name")
+  idCardEnc  String    @map("id_card_enc")
+  status     Int       @default(0) @map("status")
+  verifiedAt DateTime? @map("verified_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_realnames")
+}
