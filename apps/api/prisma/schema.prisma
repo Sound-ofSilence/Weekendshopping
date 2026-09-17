@@ -86,3 +86,102 @@ model UserRealname {
 
   @@map("user_realnames")
 }
+
+model Category {
+  id        Int       @id @default(autoincrement())
+  parentId  Int?      @map("parent_id")
+  name      String
+  level     Int
+  sort      Int       @default(0)
+  icon      String?
+  isLeaf    Boolean   @default(false) @map("is_leaf")
+  status    Int       @default(1)
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  spus Spu[]
+
+  @@index([parentId, status])
+  @@map("categories")
+}
+
+model Brand {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  logo      String?
+  status    Int       @default(1)
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  spus Spu[]
+
+  @@map("brands")
+}
+
+model Spu {
+  id          Int       @id @default(autoincrement())
+  shopId      Int       @map("shop_id")
+  categoryId  Int       @map("category_id")
+  brandId     Int?      @map("brand_id")
+  title       String
+  subtitle    String?
+  mainImg     String    @map("main_img")
+  imagesJson  Json      @map("images_json")
+  detailHtml  String    @map("detail_html") @db.Text
+  status      Int       @default(0)
+  auditStatus Int       @default(0) @map("audit_status")
+  auditReason String?   @map("audit_reason")
+  salesCount  Int       @default(0) @map("sales_count")
+  ratingAvg   Decimal   @default(5.0) @map("rating_avg") @db.Decimal(3, 2)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  category Category @relation(fields: [categoryId], references: [id])
+  brand    Brand?   @relation(fields: [brandId], references: [id])
+  skus     Sku[]
+  specs    SpuSpec[]
+
+  @@index([shopId, status])
+  @@index([categoryId, status])
+  @@map("spus")
+}
+
+model Sku {
+  id          Int       @id @default(autoincrement())
+  spuId       Int       @map("spu_id")
+  specJson    Json      @map("spec_json")
+  skuCode     String?   @unique @map("sku_code")
+  price       Decimal   @db.Decimal(10, 2)
+  marketPrice Decimal?  @map("market_price") @db.Decimal(10, 2)
+  costPrice   Decimal?  @map("cost_price") @db.Decimal(10, 2)
+  stock       Int       @default(0)
+  lockedStock Int       @default(0) @map("locked_stock")
+  warnStock   Int       @default(0) @map("warn_stock")
+  image       String?
+  status      Int       @default(1)
+  weight      Decimal?  @db.Decimal(10, 2)
+  volume      Decimal?  @db.Decimal(10, 2)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  spu Spu @relation(fields: [spuId], references: [id], onDelete: Cascade)
+
+  @@index([spuId])
+  @@map("skus")
+}
+
+model SpuSpec {
+  id         Int    @id @default(autoincrement())
+  spuId      Int    @map("spu_id")
+  name       String
+  valuesJson Json   @map("values_json")
+  sort       Int    @default(0)
+
+  spu Spu @relation(fields: [spuId], references: [id], onDelete: Cascade)
+
+  @@index([spuId])
+  @@map("spu_specs")
+}
