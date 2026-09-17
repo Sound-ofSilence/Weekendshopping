@@ -185,3 +185,18 @@ model SpuSpec {
   @@index([spuId])
   @@map("spu_specs")
 }
+
+model Cart {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  shopId    Int      @map("shop_id")
+  skuId     Int      @map("sku_id")
+  quantity  Int      @default(1)
+  selected  Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([userId, skuId])
+  @@index([userId])
+  @@map("carts")
+}

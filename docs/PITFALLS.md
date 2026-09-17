@@ -29,3 +29,14 @@
 ## 7. PostgreSQL 全文搜索
 - 用 pg_trgm 扩展 + GIN 索引，不要只用 ILIKE
 - 迁移脚本写 CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
+## 8. Spec 文件编写规范
+- 禁止在 spec 里使用嵌套代码块（三个反引号）
+- 复制时容易被截断，导致 Cline 读到一半乱跑
+- 用缩进或列表代替代码示例
+- 单个 spec 不超过 150 行
+
+## 9. Cline 防止跑偏
+- spec 不完整时，Cline 会自己去读代码补上下文，越读越多
+- 开场必须明确「最多读 N 个文件」且 N ≤ 8
+- 开场必须禁止 search_codebase
