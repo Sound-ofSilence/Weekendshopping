@@ -37,4 +37,20 @@ export class RedisService implements OnModuleDestroy {
   async del(...keys: string[]): Promise<number> {
     return this.client.del(...keys);
   }
+
+  async zIncrBy(key: string, increment: number, member: string): Promise<string> {
+    return this.client.zincrby(key, increment, member);
+  }
+
+  async zRevRange(
+    key: string,
+    start: number,
+    stop: number,
+    withScores = false,
+  ): Promise<string[]> {
+    if (withScores) {
+      return this.client.zrevrange(key, start, stop, 'WITHSCORES');
+    }
+    return this.client.zrevrange(key, start, stop);
+  }
 }

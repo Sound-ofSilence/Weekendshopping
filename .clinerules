@@ -29,3 +29,36 @@ Weekend Shopping - 多商家电商平台
 1. 用户给需求 → 你输出文件清单
 2. 用户回「开始」→ 你编码
 3. 遇到决策点，先问一句再决定
+
+## 每次对话必读
+开始任何编码任务前，必须先读：
+1. docs/PITFALLS.md（已踩过的坑，禁止重复）
+2. docs/TEMPLATES.md（参考模板，照着抄）
+
+## 编码前自查（每次提交前逐项确认）
+- [ ] 相对导入路径数对了吗？（modules/xxx/dto → common 是 3 层）
+- [ ] Prisma include 没用 as const？
+- [ ] Decimal 输出用 toFixed(2)？
+- [ ] 金额字段 DTO 是字符串 + @Matches？
+- [ ] 参考了哪个已有模块的模板？
+- [ ] 写单测了吗？
+
+## 每次任务开始前
+必读（按顺序）：
+1. docs/INDEX.md
+2. docs/PITFALLS.md
+3. docs/TEMPLATES.md
+4. docs/specs/PX-xxx.md
+
+## 完成任务后
+只回复：「完成。改了 N 个文件：
+- 文件1（说明）
+- 文件2（说明）」
+不要输出「总结」「后续建议」等冗余内容。
+
+## Token 优化铁律
+- 修改已有文件只输出 diff，不重印整个文件
+- 每个任务只读 spec + INDEX + PITFALLS + TEMPLATES + 参考模板文件
+- 不要读全项目、不要读其他模块源码
+- 一次最多问 1 个决策问题
+- spec 里有「已确定的决策」时直接执行，不要问

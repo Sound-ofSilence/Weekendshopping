@@ -17,6 +17,7 @@ import { AddressesModule } from './modules/addresses/addresses.module';
 import { BrandsModule } from './modules/brands/brands.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { ProductsModule } from './modules/products/products.module';
+import { SearchModule } from './modules/search/search.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RabbitMQModule } from './rabbitmq/rabbitmq.module';
 import { RedisModule } from './redis/redis.module';
@@ -52,6 +53,7 @@ const isTest = process.env.NODE_ENV === 'test';
     AddressesModule,
     CategoriesModule,
     BrandsModule,
+    SearchModule,
     ProductsModule,
   ],
   providers: [
