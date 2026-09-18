@@ -19,6 +19,7 @@ import { CategoriesModule } from './modules/categories/categories.module';
 import { ProductsModule } from './modules/products/products.module';
 import { CartModule } from './modules/cart/cart.module';
 import { OrdersModule } from './modules/orders/orders.module';
+import { PaymentsModule } from './modules/payments/payments.module';
 import { SearchModule } from './modules/search/search.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RabbitMQModule } from './rabbitmq/rabbitmq.module';
@@ -59,6 +60,7 @@ const isTest = process.env.NODE_ENV === 'test';
     ProductsModule,
     CartModule,
     OrdersModule,
+    PaymentsModule,
   ],
   providers: [
     TraceIdMiddleware,

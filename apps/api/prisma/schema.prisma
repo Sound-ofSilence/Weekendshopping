@@ -247,3 +247,22 @@ model OrderItem {
   @@index([orderId])
   @@map("order_items")
 }
+
+model Payment {
+  id            Int       @id @default(autoincrement())
+  paymentNo     String    @unique @map("payment_no")
+  orderId       Int       @map("order_id")
+  orderNo       String    @map("order_no")
+  userId        Int       @map("user_id")
+  amount        Decimal   @db.Decimal(10, 2)
+  status        Int       @default(0)
+  channel       Int       @default(0)
+  transactionNo String?   @map("transaction_no")
+  paidAt        DateTime? @map("paid_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([orderId])
+  @@map("payments")
+}
