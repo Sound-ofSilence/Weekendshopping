@@ -337,3 +337,26 @@ model LogisticsTrace {
   @@index([shipmentId, traceTime])
   @@map("logistics_traces")
 }
+
+model Review {
+  id            Int       @id @default(autoincrement())
+  orderItemId   Int       @unique @map("order_item_id")
+  userId        Int       @map("user_id")
+  spuId         Int       @map("spu_id")
+  skuId         Int       @map("sku_id")
+  shopId        Int       @map("shop_id")
+  rating        Int
+  content       String    @db.Text
+  imagesJson    Json      @map("images_json")
+  isAnonymous   Boolean   @default(false) @map("is_anonymous")
+  sellerReply   String?   @db.Text @map("seller_reply")
+  sellerReplyAt DateTime? @map("seller_reply_at")
+  status        Int       @default(0)
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  @@index([spuId, status])
+  @@index([userId])
+  @@index([shopId])
+  @@map("reviews")
+}
