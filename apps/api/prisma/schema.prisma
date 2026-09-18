@@ -266,3 +266,21 @@ model Payment {
   @@index([orderId])
   @@map("payments")
 }
+
+model Refund {
+  id           Int       @id @default(autoincrement())
+  refundNo     String    @unique @map("refund_no")
+  orderId      Int       @map("order_id")
+  orderNo      String    @map("order_no")
+  userId       Int       @map("user_id")
+  amount       Decimal   @db.Decimal(10, 2)
+  reason       String
+  status       Int       @default(0)
+  thirdPartyNo String?   @map("third_party_no")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([orderId])
+  @@map("refunds")
+}

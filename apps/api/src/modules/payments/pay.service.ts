@@ -11,6 +11,8 @@ export const PaymentStatus = {
 export interface PayService {
   /** 发起支付，返回第三方交易流水号 */
   createPayment(orderNo: string, amount: string): Promise<string>;
+  /** 发起退款，返回第三方退款流水号 */
+  refund(refundNo: string, amount: string): Promise<{ thirdPartyNo: string }>;
 }
 
 /** PayService 注入 token */
@@ -25,5 +27,13 @@ export class MockPayService implements PayService {
       .toString()
       .padStart(6, '0');
     return `MOCK${timestamp}${random}`;
+  }
+
+  async refund(_refundNo: string, _amount: string): Promise<{ thirdPartyNo: string }> {
+    const timestamp = Date.now();
+    const random = Math.floor(Math.random() * 1_000_000)
+      .toString()
+      .padStart(6, '0');
+    return { thirdPartyNo: `MOCKREFUND${timestamp}${random}` };
   }
 }
