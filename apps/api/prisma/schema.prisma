@@ -284,3 +284,56 @@ model Refund {
   @@index([orderId])
   @@map("refunds")
 }
+
+model FreightTemplate {
+  id              Int      @id @default(autoincrement())
+  shopId          Int      @map("shop_id")
+  name            String
+  chargeType      Int      @default(1)
+  firstCount      Int      @map("first_count")
+  firstFee        Decimal  @db.Decimal(10, 2) @map("first_fee")
+  extraCount      Int      @map("extra_count")
+  extraFee        Decimal  @db.Decimal(10, 2) @map("extra_fee")
+  freeRegions     Json     @map("free_regions")
+  excludedRegions Json     @map("excluded_regions")
+  status          Int      @default(1)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@index([shopId, status])
+  @@map("freight_templates")
+}
+
+model Shipment {
+  id             Int             @id @default(autoincrement())
+  orderId        Int             @unique @map("order_id")
+  orderNo        String          @map("order_no")
+  shopId         Int             @map("shop_id")
+  expressCompany String          @map("express_company")
+  expressCode    String          @map("express_code")
+  trackingNo     String          @map("tracking_no")
+  status         Int             @default(0)
+  shippedAt      DateTime        @map("shipped_at")
+  receivedAt     DateTime?       @map("received_at")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+
+  traces LogisticsTrace[]
+
+  @@index([trackingNo])
+  @@map("shipments")
+}
+
+model LogisticsTrace {
+  id          Int      @id @default(autoincrement())
+  shipmentId  Int      @map("shipment_id")
+  traceTime   DateTime @map("trace_time")
+  description String
+  status      Int
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  shipment Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+
+  @@index([shipmentId, traceTime])
+  @@map("logistics_traces")
+}
