@@ -360,3 +360,33 @@ model Review {
   @@index([shopId])
   @@map("reviews")
 }
+
+model AfterSale {
+  id                Int       @id @default(autoincrement())
+  afterSaleNo       String    @unique @map("after_sale_no")
+  orderId           Int       @map("order_id")
+  orderNo           String    @map("order_no")
+  orderItemId       Int       @map("order_item_id")
+  userId            Int       @map("user_id")
+  shopId            Int       @map("shop_id")
+  type              Int
+  reason            String
+  description       String?   @db.Text
+  evidenceJson      Json?     @map("evidence_json")
+  amount            Decimal   @db.Decimal(10, 2)
+  status            Int       @default(0)
+  returnTrackingNo  String?   @map("return_tracking_no")
+  returnExpressCode String?   @map("return_express_code")
+  sellerReply       String?   @map("seller_reply")
+  sellerReplyAt     DateTime? @map("seller_reply_at")
+  refundNo          String?   @map("refund_no")
+  closedAt          DateTime? @map("closed_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  @@index([orderId])
+  @@index([userId])
+  @@index([shopId, status])
+  @@map("after_sales")
+}
+
