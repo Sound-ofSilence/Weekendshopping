@@ -517,3 +517,18 @@ model ShopWallet {
 
   @@map("shop_wallets")
 }
+
+model AdminLog {
+  id         Int      @id @default(autoincrement())
+  adminId    Int      @map("admin_id")
+  module     String
+  action     String
+  targetId   Int?     @map("target_id")
+  detailJson Json?    @map("detail_json")
+  ip         String?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([adminId, createdAt])
+  @@index([module])
+  @@map("admin_logs")
+}
