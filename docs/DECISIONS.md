@@ -16,3 +16,9 @@
 - 整个构建产物 COPY 到 runner，不用 --prod deploy
 
 影响：后续所有 Node 服务 Dockerfile 都用这个模板
+
+## D005 满减一期不接入下单
+日期：2026-09-19
+原因：P8b 只做满减配置 + computeBestReduction 计算函数，不改 P4 订单创建
+影响：前端下单时暂时不享受满减优惠
+后续：P12 优化阶段把 computeBestReduction 接入 OrdersService 价格计算
