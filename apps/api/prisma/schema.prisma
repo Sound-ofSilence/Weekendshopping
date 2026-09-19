@@ -426,4 +426,44 @@ model UserCoupon {
   @@unique([userId, couponId, receivedAt])
   @@map("user_coupons")
 }
+model Promotion {
+  id        Int      @id @default(autoincrement())
+  shopId    Int      @map("shop_id")
+  name      String
+  rulesJson Json     @map("rules_json")
+  startAt   DateTime @map("start_at")
+  endAt     DateTime @map("end_at")
+  status    Int      @default(1)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
+  @@index([shopId, status])
+  @@map("promotions")
+}
+
+model SeckillActivity {
+  id        Int      @id @default(autoincrement())
+  name      String
+  startAt   DateTime @map("start_at")
+  endAt     DateTime @map("end_at")
+  status    Int      @default(1)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("seckill_activities")
+}
+
+model SeckillProduct {
+  id           Int      @id @default(autoincrement())
+  activityId   Int      @map("activity_id")
+  skuId        Int      @map("sku_id")
+  seckillPrice Decimal  @map("seckill_price") @db.Decimal(10, 2)
+  stock        Int
+  soldCount    Int      @default(0) @map("sold_count")
+  limitPerUser Int      @default(1) @map("limit_per_user")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@unique([activityId, skuId])
+  @@index([skuId])
+  @@map("seckill_products")
+}

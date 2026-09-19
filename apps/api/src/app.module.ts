@@ -19,6 +19,7 @@ import { CategoriesModule } from './modules/categories/categories.module';
 import { ProductsModule } from './modules/products/products.module';
 import { CartModule } from './modules/cart/cart.module';
 import { CouponsModule } from './modules/coupons/coupons.module';
+import { PromotionsModule } from './modules/promotions/promotions.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { LogisticsModule } from './modules/logistics/logistics.module';
@@ -64,6 +65,7 @@ const isTest = process.env.NODE_ENV === 'test';
     ProductsModule,
     CartModule,
     CouponsModule,
+    PromotionsModule,
     OrdersModule,
     ReviewsModule,
     LogisticsModule,
