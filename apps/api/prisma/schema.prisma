@@ -390,3 +390,40 @@ model AfterSale {
   @@map("after_sales")
 }
 
+model Coupon {
+  id            Int      @id @default(autoincrement())
+  shopId        Int?     @map("shop_id")
+  name          String
+  type          Int
+  value         Decimal  @db.Decimal(10, 2)
+  minAmount     Decimal  @db.Decimal(10, 2) @map("min_amount")
+  totalCount    Int      @map("total_count")
+  receivedCount Int      @default(0) @map("received_count")
+  usedCount     Int      @default(0) @map("used_count")
+  perUserLimit  Int      @default(1) @map("per_user_limit")
+  startAt       DateTime @map("start_at")
+  endAt         DateTime @map("end_at")
+  status        Int      @default(1)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@index([shopId, status])
+  @@index([startAt, endAt])
+  @@map("coupons")
+}
+
+model UserCoupon {
+  id         Int       @id @default(autoincrement())
+  userId     Int       @map("user_id")
+  couponId   Int       @map("coupon_id")
+  orderId    Int?      @map("order_id")
+  status     Int       @default(0)
+  receivedAt DateTime  @map("received_at")
+  usedAt     DateTime? @map("used_at")
+  expiredAt  DateTime  @map("expired_at")
+
+  @@index([userId, status])
+  @@unique([userId, couponId, receivedAt])
+  @@map("user_coupons")
+}
+
