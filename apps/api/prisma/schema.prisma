@@ -467,3 +467,53 @@ model SeckillProduct {
   @@index([skuId])
   @@map("seckill_products")
 }
+
+model Settlement {
+  id            Int       @id @default(autoincrement())
+  settlementNo  String    @unique @map("settlement_no")
+  shopId        Int       @map("shop_id")
+  periodStart   DateTime  @map("period_start")
+  periodEnd     DateTime  @map("period_end")
+  orderAmount   Decimal   @map("order_amount") @db.Decimal(12, 2)
+  commission    Decimal   @db.Decimal(12, 2)
+  refundAmount  Decimal   @map("refund_amount") @db.Decimal(12, 2)
+  payable       Decimal   @db.Decimal(12, 2)
+  status        Int       @default(0)
+  settledAt     DateTime? @map("settled_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  @@index([shopId, status])
+  @@index([periodStart, periodEnd])
+  @@map("settlements")
+}
+
+model Withdrawal {
+  id            Int       @id @default(autoincrement())
+  withdrawalNo  String    @unique @map("withdrawal_no")
+  shopId        Int       @map("shop_id")
+  amount        Decimal   @db.Decimal(12, 2)
+  bankName      String    @map("bank_name")
+  bankAccount   String    @map("bank_account")
+  accountHolder String    @map("account_holder")
+  status        Int       @default(0)
+  remark        String?
+  reviewedAt    DateTime? @map("reviewed_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  @@index([shopId, status])
+  @@map("withdrawals")
+}
+
+model ShopWallet {
+  id              Int      @id @default(autoincrement())
+  shopId          Int      @unique @map("shop_id")
+  balance         Decimal  @default(0) @db.Decimal(12, 2)
+  frozenBalance   Decimal  @default(0) @map("frozen_balance") @db.Decimal(12, 2)
+  totalIncome     Decimal  @default(0) @map("total_income") @db.Decimal(12, 2)
+  totalWithdrawn  Decimal  @default(0) @map("total_withdrawn") @db.Decimal(12, 2)
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("shop_wallets")
+}
