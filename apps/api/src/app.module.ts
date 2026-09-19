@@ -22,6 +22,7 @@ import { CouponsModule } from './modules/coupons/coupons.module';
 import { PromotionsModule } from './modules/promotions/promotions.module';
 import { SellerModule } from './modules/seller/seller.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { NotificationModule } from './modules/notifications/notification.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { LogisticsModule } from './modules/logistics/logistics.module';
@@ -70,6 +71,7 @@ const isTest = process.env.NODE_ENV === 'test';
     PromotionsModule,
     SellerModule,
     AdminModule,
+    NotificationModule,
     OrdersModule,
     ReviewsModule,
     LogisticsModule,

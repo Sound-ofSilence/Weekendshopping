@@ -4,6 +4,7 @@ import { ErrorCode } from '../../common/constants/error-codes';
 import { AppException } from '../../common/exceptions/app.exception';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { ShipOrderDto, ShipOrderItemDto } from './dto/ship-order.dto';
+import { NotificationService } from '../notifications/notification.service';
 
 /** 订单状态：1=PAID 2=SHIPPED（与 orders 模块 OrderStatus 一致） */
 const ORDER_STATUS_PAID = 1;
@@ -16,7 +17,10 @@ type ShipmentWithTraces = Shipment & { traces: LogisticsTrace[] };
 
 @Injectable()
 export class ShipmentService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notificationService: NotificationService,
+  ) {}
 
   async ship(
     userId: string,
@@ -62,7 +66,16 @@ export class ShipmentService {
           shippedAt: new Date(),
         },
       });
-
+      await this.notificationService.create(
+        {
+          userId: order.userId,
+          type: 'order_shipped',
+          title: '订单已发货',
+          content: `您的订单 ${orderNo} 已发货，快递单号 ${dto.trackingNo}`,
+          link: `/orders/${orderNo}`,
+        },
+        tx,
+      );
       return created;
     });
 

@@ -6,6 +6,7 @@ import type {
   ShipOrderItemDto,
 } from '../../src/modules/logistics/dto/ship-order.dto';
 import { ShipmentService } from '../../src/modules/logistics/shipment.service';
+import { NotificationService } from '../../src/modules/notifications/notification.service';
 import { PrismaService } from '../../src/prisma/prisma.service';
 
 describe('ShipmentService (unit)', () => {
@@ -56,7 +57,14 @@ describe('ShipmentService (unit)', () => {
   beforeEach(async () => {
     jest.clearAllMocks();
     const moduleRef = await Test.createTestingModule({
-      providers: [ShipmentService, { provide: PrismaService, useValue: prismaMock }],
+      providers: [
+        ShipmentService,
+        { provide: PrismaService, useValue: prismaMock },
+        {
+          provide: NotificationService,
+          useValue: { create: jest.fn().mockResolvedValue({ id: 1 }) },
+        },
+      ],
     }).compile();
     service = moduleRef.get(ShipmentService);
   });
