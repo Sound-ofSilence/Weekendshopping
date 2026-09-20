@@ -1,3 +1,4 @@
+import { Throttle } from '@nestjs/throttler';
 import { Body, Controller, Post, Req } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
@@ -16,6 +17,7 @@ export class AuthController {
 
   @Public()
   @Post('send-sms')
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
   @ApiOperation({ summary: '发送验证码' })
   sendSms(@Body() dto: SendSmsDto, @Req() req: Request): Promise<void> {
     return this.authService.sendSms(dto, req.ip ?? 'unknown');
@@ -30,6 +32,7 @@ export class AuthController {
 
   @Public()
   @Post('login')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @ApiOperation({ summary: '密码/验证码登录' })
   login(@Body() dto: LoginDto): Promise<AuthResponseDto> {
     return this.authService.login(dto);

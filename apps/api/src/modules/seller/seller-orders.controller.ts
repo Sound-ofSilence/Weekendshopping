@@ -8,6 +8,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Role } from '../../common/constants/roles.enum';
 import { SellerOrderQueryDto } from './dto/seller-order-query.dto';
+import { maskPhone } from '../../common/utils/mask.util';
 
 const DEFAULT_SHOP_ID = 1;
 
@@ -88,7 +89,12 @@ export class SellerOrdersController {
       totalAmount: order.totalAmount.toFixed(2),
       freightAmount: order.freightAmount.toFixed(2),
       discountAmount: order.discountAmount.toFixed(2),
-      receiverJson: order.receiverJson,
+      receiverJson: order.receiverJson
+        ? {
+            ...(order.receiverJson as Record<string, unknown>),
+            phone: maskPhone((order.receiverJson as Record<string, unknown>).phone as string),
+          }
+        : null,
       buyerRemark: order.buyerRemark,
       createdAt: order.createdAt.toISOString(),
       paidAt: order.paidAt ? order.paidAt.toISOString() : null,
