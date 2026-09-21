@@ -4,67 +4,9 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button, Card, PriceText } from '@/components/ui';
+import { MOCK_CART_ITEMS, type CartItem } from '@/lib/mock-cart';
 
-interface CartItem {
-  id: number;
-  shopId: number;
-  shopName: string;
-  title: string;
-  spec: string;
-  price: string;
-  quantity: number;
-  emoji: string;
-  selected: boolean;
-  invalid?: boolean;
-}
-
-const initialItems: CartItem[] = [
-  {
-    id: 1,
-    shopId: 1,
-    shopName: 'XX旗舰店',
-    title: '2026 新款连衣裙 显瘦气质',
-    spec: '黑色 · M',
-    price: '99.00',
-    quantity: 1,
-    emoji: '👗',
-    selected: true,
-  },
-  {
-    id: 2,
-    shopId: 1,
-    shopName: 'XX旗舰店',
-    title: '真皮男士商务休闲鞋',
-    spec: '棕色 · 42',
-    price: '288.00',
-    quantity: 1,
-    emoji: '👞',
-    selected: true,
-  },
-  {
-    id: 3,
-    shopId: 2,
-    shopName: 'YY专营店',
-    title: '无线蓝牙耳机 主动降噪',
-    spec: '白色',
-    price: '399.00',
-    quantity: 2,
-    emoji: '🎧',
-    selected: false,
-  },
-  {
-    id: 4,
-    shopId: 2,
-    shopName: 'YY专营店',
-    title: '简约北欧风台灯（已下架）',
-    spec: '白色',
-    price: '129.00',
-    quantity: 1,
-    emoji: '💡',
-    selected: false,
-    invalid: true,
-  },
-];
+const initialItems: CartItem[] = MOCK_CART_ITEMS;
 
 export default function CartPage() {
   const router = useRouter();
@@ -136,7 +78,12 @@ export default function CartPage() {
       alert('请先选择要结算的商品');
       return;
     }
-    router.push('/checkout');
+    // 把选中的商品 ID 和数量拼成 URL 参数
+    const params = new URLSearchParams();
+    selectedItems.forEach((item) => {
+      params.append('item', `${item.id}:${item.quantity}`);
+    });
+    router.push(`/checkout?${params.toString()}`);
   };
 
   if (items.length === 0) {
