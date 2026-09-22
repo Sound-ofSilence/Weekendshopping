@@ -23,7 +23,6 @@ RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
 
 # 从 deps 阶段拷贝 node_modules
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/apps/web-buyer/node_modules ./apps/web-buyer/node_modules 2>/dev/null || true
 
 # 拷贝源码
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
