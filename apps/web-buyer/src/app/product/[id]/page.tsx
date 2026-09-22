@@ -1,60 +1,145 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Button, Card, PriceText } from '@/components/ui';
-
-const mockProduct = {
-  id: 1,
-  title: '2026 新款连衣裙 显瘦气质 春秋必备',
-  subtitle: '精选面料 显瘦气质',
-  price: '99.00',
-  originalPrice: '199.00',
-  sales: '1.2万',
-  rating: '4.9',
-  emoji: '👗',
-  images: ['👗', '👚', '👘', '🧥'],
-  specs: [
-    { name: '颜色', values: ['黑色', '白色', '灰色'] },
-    { name: '尺码', values: ['S', 'M', 'L', 'XL'] },
-  ],
-  shop: { id: 1, name: 'XX旗舰店', rating: '4.8', followers: '12万' },
-  reviews: [
-    { id: 1, user: '用户***', rating: 5, content: '质量很好，物流也快，值得回购！' },
-    { id: 2, user: '匿名用户', rating: 5, content: '尺码标准，显瘦效果很好。' },
-  ],
-};
+import { addToCart } from '@/lib/cart-store';
+import { getProductById, type MockProduct } from '@/lib/mock-products';
 
 export default function ProductDetailPage() {
   const router = useRouter();
+  const params = useParams();
+  const productId = Number(params.id);
+
+  const [product, setProduct] = useState<MockProduct | null>(null);
+  const [notFound, setNotFound] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
   const [selectedSpecs, setSelectedSpecs] = useState<Record<string, string>>({});
   const [quantity, setQuantity] = useState(1);
   const [showSkuSheet, setShowSkuSheet] = useState(false);
   const [favorited, setFavorited] = useState(false);
+  const [pendingAction, setPendingAction] = useState<'add' | 'buy' | null>(null);
 
-  const allSelected = mockProduct.specs.every((s) => selectedSpecs[s.name]);
+  useEffect(() => {
+    if (!productId || isNaN(productId)) {
+      setNotFound(true);
+      setMounted(true);
+      return;
+    }
+    const p = getProductById(productId);
+    if (!p) {
+      setNotFound(true);
+      setMounted(true);
+      return;
+    }
+    setProduct(p);
+    setMounted(true);
+  }, [productId]);
+
+  const allSelected = product
+    ? product.specs.every((s) => selectedSpecs[s.name])
+    : false;
+
+  const specString = Object.values(selectedSpecs).join(' · ');
 
   const handleAddCart = () => {
     if (!allSelected) {
+      setPendingAction('add');
       setShowSkuSheet(true);
       return;
     }
-    alert('已加入购物车');
+    doAddToCart();
+  };
+
+  const doAddToCart = () => {
+    if (!product) return;
+    addToCart({
+      spuId: product.spuId,
+      skuId: product.skuId,
+      shopId: product.shopId,
+      shopName: product.shopName,
+      title: product.title,
+      spec: specString || '默认规格',
+      price: product.price,
+      quantity,
+      emoji: product.emoji,
+    });
+
+    if (confirm('已加入购物车，是否立即前往购物车？')) {
+      router.push('/cart');
+    }
   };
 
   const handleBuyNow = () => {
     if (!allSelected) {
+      setPendingAction('buy');
       setShowSkuSheet(true);
       return;
     }
-    router.push(`/checkout?skuId=1&qty=${quantity}`);
+    doBuyNow();
   };
+
+  const doBuyNow = () => {
+    if (!product) return;
+    const item = addToCart({
+      spuId: product.spuId,
+      skuId: product.skuId,
+      shopId: product.shopId,
+      shopName: product.shopName,
+      title: product.title,
+      spec: specString || '默认规格',
+      price: product.price,
+      quantity,
+      emoji: product.emoji,
+    });
+    router.push(`/checkout?item=${item.id}:${item.quantity}`);
+  };
+
+  const handleSkuConfirm = () => {
+    if (!allSelected) {
+      alert('请选择完整规格');
+      return;
+    }
+    setShowSkuSheet(false);
+    if (pendingAction === 'add') {
+      doAddToCart();
+    } else if (pendingAction === 'buy') {
+      doBuyNow();
+    }
+    setPendingAction(null);
+  };
+
+  // ==================== 渲染 ====================
+
+  // 首次渲染
+  if (!mounted) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <p className="text-text-secondary">加载中...</p>
+      </div>
+    );
+  }
+
+  // 商品不存在
+  if (notFound || !product) {
+    return (
+      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4">
+        <div className="text-6xl">📦</div>
+        <p className="text-text-secondary">商品不存在或已下架</p>
+        <Link href="/">
+          <Button>返回首页</Button>
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-bg-page pb-32">
       {/* 主图 */}
       <div className="relative flex h-96 items-center justify-center bg-bg-card text-[8rem] md:h-[500px] md:text-[12rem]">
-        {mockProduct.images[0]}
+        {product.images[0]}
         <button
           onClick={() => router.back()}
           className="absolute left-4 top-4 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-black/30 text-white backdrop-blur"
@@ -62,27 +147,27 @@ export default function ProductDetailPage() {
           ←
         </button>
         <div className="absolute bottom-4 right-4 rounded-full bg-black/30 px-3 py-1 text-xs text-white backdrop-blur">
-          1 / {mockProduct.images.length}
+          1 / {product.images.length}
         </div>
       </div>
 
       {/* 价格区 */}
       <div className="bg-bg-card px-4 py-3">
         <div className="flex items-baseline gap-2">
-          <PriceText price={mockProduct.price} size="lg" />
+          <PriceText price={product.price} size="lg" />
           <span className="text-sm text-text-disabled line-through">
-            ¥{mockProduct.originalPrice}
+            ¥{product.originalPrice}
           </span>
           <span className="rounded bg-error px-2 py-0.5 text-xs text-white">
             限时立减
           </span>
         </div>
         <h1 className="mt-2 text-base font-medium text-text-primary">
-          {mockProduct.title}
+          {product.title}
         </h1>
-        <p className="mt-1 text-xs text-text-secondary">{mockProduct.subtitle}</p>
+        <p className="mt-1 text-xs text-text-secondary">{product.subtitle}</p>
         <p className="mt-2 text-xs text-text-secondary">
-          已售 {mockProduct.sales} · 评分 {mockProduct.rating}
+          已售 {product.sales} · 评分 {product.rating}
         </p>
       </div>
 
@@ -97,14 +182,17 @@ export default function ProductDetailPage() {
 
       {/* SKU 选择入口 */}
       <button
-        onClick={() => setShowSkuSheet(true)}
+        onClick={() => {
+          setPendingAction(null);
+          setShowSkuSheet(true);
+        }}
         className="mt-2 flex w-full cursor-pointer items-center gap-3 bg-bg-card px-4 py-3 text-left"
       >
         <span className="text-sm text-text-secondary">选择</span>
         <span className="text-sm text-text-primary">
           {allSelected
-            ? Object.values(selectedSpecs).join(' · ')
-            : mockProduct.specs.map((s) => s.name).join(' · ')}
+            ? specString
+            : product.specs.map((s) => s.name).join(' · ')}
         </span>
         <span className="ml-auto text-xs text-text-secondary">&gt;</span>
       </button>
@@ -126,9 +214,9 @@ export default function ProductDetailPage() {
             🏪
           </div>
           <div className="flex-1">
-            <h3 className="text-sm font-medium">{mockProduct.shop.name}</h3>
+            <h3 className="text-sm font-medium">{product.shopName}</h3>
             <p className="mt-0.5 text-xs text-text-secondary">
-              评分 {mockProduct.shop.rating} · 粉丝 {mockProduct.shop.followers}
+              评分 4.8 · 粉丝 12万
             </p>
           </div>
           <Button variant="outline" size="sm">
@@ -140,11 +228,11 @@ export default function ProductDetailPage() {
       {/* 评价 */}
       <Card className="mt-2 rounded-none">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-bold">评价 ({mockProduct.sales})</h3>
+          <h3 className="text-sm font-bold">评价 ({product.sales})</h3>
           <span className="text-xs text-text-secondary">好评率 98% &gt;</span>
         </div>
         <div className="mt-3 space-y-3">
-          {mockProduct.reviews.map((r) => (
+          {product.reviews.map((r) => (
             <div key={r.id} className="border-t border-border-light pt-3">
               <div className="flex items-center gap-2">
                 <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-200 text-xs">
@@ -161,7 +249,7 @@ export default function ProductDetailPage() {
         </div>
       </Card>
 
-      {/* 底部固定操作栏（移动端抬 56px 给 TabBar 让位） */}
+      {/* 底部固定操作栏 */}
       <div className="fixed bottom-14 left-0 right-0 z-40 border-t border-border bg-bg-card md:bottom-0">
         <div className="mx-auto flex max-w-screen-xl items-center gap-2 px-4 py-2">
           <button
@@ -194,17 +282,18 @@ export default function ProductDetailPage() {
       {/* SKU 选择弹层 */}
       {showSkuSheet && (
         <SkuSheet
-          specs={mockProduct.specs}
+          specs={product.specs}
           selected={selectedSpecs}
           onSelect={setSelectedSpecs}
           quantity={quantity}
           onQuantityChange={setQuantity}
-          price={mockProduct.price}
-          emoji={mockProduct.emoji}
-          onClose={() => setShowSkuSheet(false)}
-          onConfirm={() => {
+          price={product.price}
+          emoji={product.emoji}
+          onClose={() => {
             setShowSkuSheet(false);
+            setPendingAction(null);
           }}
+          onConfirm={handleSkuConfirm}
         />
       )}
     </div>

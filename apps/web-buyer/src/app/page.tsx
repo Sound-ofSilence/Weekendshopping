@@ -2,9 +2,9 @@
 
 import { Card, PriceText } from '@/components/ui';
 import Link from 'next/link';
+import { MOCK_PRODUCTS } from '@/lib/mock-products';
 
-// ============ 静态数据（后续接 API） ============
-
+// 金刚区（静态）
 const quickEntries = [
   { id: 1, name: '女装', icon: '👗' },
   { id: 2, name: '男装', icon: '👔' },
@@ -18,24 +18,17 @@ const quickEntries = [
   { id: 10, name: '更多', icon: '🎁' },
 ];
 
+// Banner（静态）
 const banners = [
   { id: 1, title: '周末大促', desc: '全场满 200 减 30', bg: 'from-orange-400 to-red-500' },
   { id: 2, title: '新品首发', desc: '限时 8 折', bg: 'from-blue-400 to-purple-500' },
   { id: 3, title: '超级秒杀', desc: '每天 10 点开抢', bg: 'from-pink-400 to-orange-500' },
 ];
 
-const products = [
-  { id: 1, title: '2026 新款连衣裙 显瘦气质', price: '99.00', originalPrice: '199.00', sales: '1.2万', emoji: '👗' },
-  { id: 2, title: '真皮男士商务休闲鞋', price: '288.00', originalPrice: '599.00', sales: '8560', emoji: '👞' },
-  { id: 3, title: '无线蓝牙耳机 主动降噪', price: '399.00', originalPrice: '699.00', sales: '3.5万', emoji: '🎧' },
-  { id: 4, title: '简约北欧风台灯', price: '129.00', originalPrice: '259.00', sales: '1243', emoji: '💡' },
-  { id: 5, title: '冬季加厚羽绒服', price: '599.00', originalPrice: '1299.00', sales: '5678', emoji: '🧥' },
-  { id: 6, title: '智能手表运动款', price: '899.00', originalPrice: '1599.00', sales: '2.1万', emoji: '⌚' },
-];
-
-// ============ 页面 ============
-
 export default function Home() {
+  const products = MOCK_PRODUCTS;
+  const seckillProducts = products.slice(0, 4);
+
   return (
     <div className="space-y-4 px-4 py-4">
       {/* Banner 轮播位 */}
@@ -83,7 +76,7 @@ export default function Home() {
           </Link>
         </div>
         <div className="mt-4 flex gap-3 overflow-x-auto pb-2">
-          {products.slice(0, 4).map((p) => (
+          {seckillProducts.map((p) => (
             <Link
               key={p.id}
               href={`/product/${p.id}`}

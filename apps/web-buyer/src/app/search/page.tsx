@@ -1,9 +1,10 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { Suspense, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button, Card, Input, PriceText } from '@/components/ui';
+import { MOCK_PRODUCTS, type MockProduct } from '@/lib/mock-products';
 
 type SortType = 'default' | 'sales' | 'price_asc' | 'price_desc';
 
@@ -14,35 +15,48 @@ const sorts: { value: SortType; label: string }[] = [
   { value: 'price_desc', label: '价格 ↓' },
 ];
 
-function parseSales(s: string): number {
-  if (s.includes('万')) {
-    return parseFloat(s.replace('万', '')) * 10000;
-  }
-  return parseFloat(s);
+export default function SearchPageWrapper() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-[60vh] items-center justify-center">
+          <p className="text-text-secondary">加载中...</p>
+        </div>
+      }
+    >
+      <SearchPage />
+    </Suspense>
+  );
 }
 
-const mockProducts = [
-  { id: 1, title: '2026 新款连衣裙 显瘦气质', price: '99.00', originalPrice: '199.00', sales: '1.2万', emoji: '👗', tags: ['包邮', '7天退'] },
-  { id: 2, title: '真皮男士商务休闲鞋', price: '288.00', originalPrice: '599.00', sales: '8560', emoji: '👞', tags: ['包邮'] },
-  { id: 3, title: '无线蓝牙耳机 主动降噪', price: '399.00', originalPrice: '699.00', sales: '3.5万', emoji: '🎧', tags: ['包邮', '运费险'] },
-  { id: 4, title: '简约北欧风台灯', price: '129.00', originalPrice: '259.00', sales: '1243', emoji: '💡', tags: ['7天退'] },
-  { id: 5, title: '冬季加厚羽绒服', price: '599.00', originalPrice: '1299.00', sales: '5678', emoji: '🧥', tags: ['包邮', '7天退'] },
-  { id: 6, title: '智能手表运动款', price: '899.00', originalPrice: '1599.00', sales: '2.1万', emoji: '⌚', tags: ['包邮'] },
-];
-
-export default function SearchPage() {
+function SearchPage() {
   const router = useRouter();
-  const [keyword, setKeyword] = useState('');
+  const searchParams = useSearchParams();
+  const initialKeyword = searchParams.get('keyword') || '';
+
+  const [keyword, setKeyword] = useState(initialKeyword);
   const [sort, setSort] = useState<SortType>('default');
   const [showFilter, setShowFilter] = useState(false);
 
   const handleSearch = () => {
     if (keyword.trim()) {
       router.push(`/search?keyword=${encodeURIComponent(keyword)}`);
+    } else {
+      router.push('/search');
     }
   };
+
+  // 根据关键词过滤 + 排序
   const sortedProducts = useMemo(() => {
-  const list = [...mockProducts];
+    let list: MockProduct[] = [...MOCK_PRODUCTS];
+
+    // 关键词过滤（标题包含）
+    if (initialKeyword) {
+      const kw = initialKeyword.toLowerCase();
+      list = list.filter((p) => p.title.toLowerCase().includes(kw));
+    }
+
+    // 排序
     switch (sort) {
       case 'sales':
         return list.sort((a, b) => parseSales(b.sales) - parseSales(a.sales));
@@ -53,7 +67,7 @@ export default function SearchPage() {
       default:
         return list;
     }
-  }, [sort]);
+  }, [initialKeyword, sort]);
 
   return (
     <div className="min-h-screen bg-bg-page">
@@ -109,41 +123,65 @@ export default function SearchPage() {
       {/* 商品列表 */}
       <div className="mx-auto max-w-screen-xl px-4 py-4">
         <p className="mb-3 text-xs text-text-secondary">
-          找到 <span className="font-medium text-text-primary">{sortedProducts.length}</span> 件商品
+          {initialKeyword ? (
+            <>
+              搜索「{initialKeyword}」找到{' '}
+              <span className="font-medium text-text-primary">
+                {sortedProducts.length}
+              </span>{' '}
+              件商品
+            </>
+          ) : (
+            <>
+              找到{' '}
+              <span className="font-medium text-text-primary">
+                {sortedProducts.length}
+              </span>{' '}
+              件商品
+            </>
+          )}
         </p>
 
-        <div className="space-y-3">
-          {sortedProducts.map((p) => (
-            <Link key={p.id} href={`/product/${p.id}`}>
-              <Card className="flex gap-3 p-3 transition hover:shadow-md">
-                <div className="flex h-24 w-24 flex-shrink-0 items-center justify-center rounded-md bg-bg-page text-5xl">
-                  {p.emoji}
-                </div>
-                <div className="flex flex-1 flex-col justify-between overflow-hidden">
-                  <div>
-                    <h3 className="line-clamp-2 text-sm text-text-primary">
-                      {p.title}
-                    </h3>
-                    <div className="mt-1 flex flex-wrap gap-1">
-                      {p.tags.map((tag) => (
-                        <span
-                          key={tag}
-                          className="rounded border border-primary/30 px-1.5 py-0.5 text-xs text-primary"
-                        >
-                          {tag}
-                        </span>
-                      ))}
+        {sortedProducts.length === 0 ? (
+          <div className="flex flex-col items-center justify-center gap-4 py-20">
+            <div className="text-6xl">🔍</div>
+            <p className="text-text-secondary">没有找到相关商品</p>
+            <Button onClick={() => router.push('/search')}>查看全部商品</Button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {sortedProducts.map((p) => (
+              <Link key={p.id} href={`/product/${p.id}`}>
+                <Card className="flex gap-3 p-3 transition hover:shadow-md">
+                  <div className="flex h-24 w-24 flex-shrink-0 items-center justify-center rounded-md bg-bg-page text-5xl">
+                    {p.emoji}
+                  </div>
+                  <div className="flex flex-1 flex-col justify-between overflow-hidden">
+                    <div>
+                      <h3 className="line-clamp-2 text-sm text-text-primary">
+                        {p.title}
+                      </h3>
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {p.tags.map((tag) => (
+                          <span
+                            key={tag}
+                            className="rounded border border-primary/30 px-1.5 py-0.5 text-xs text-primary"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="flex items-end justify-between">
+                      <PriceText price={p.price} originalPrice={p.originalPrice} size="md" />
+                      <span className="text-xs text-text-disabled">已售 {p.sales}</span>
                     </div>
                   </div>
-                  <div className="flex items-end justify-between">
-                    <PriceText price={p.price} originalPrice={p.originalPrice} size="md" />
-                    <span className="text-xs text-text-disabled">已售 {p.sales}</span>
-                  </div>
-                </div>
-              </Card>
-            </Link>
-          ))}
-        </div>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* 筛选抽屉 */}
@@ -215,4 +253,11 @@ export default function SearchPage() {
       )}
     </div>
   );
+}
+
+function parseSales(s: string): number {
+  if (s.includes('万')) {
+    return parseFloat(s.replace('万', '')) * 10000;
+  }
+  return parseFloat(s);
 }

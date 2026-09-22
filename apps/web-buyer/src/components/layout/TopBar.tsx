@@ -28,6 +28,13 @@ export function TopBar() {
         {/* 右侧图标 */}
         <nav className="flex flex-shrink-0 items-center gap-3">
           <Link
+            href="/cart"
+            className="flex h-8 w-8 items-center justify-center rounded-full transition hover:bg-gray-100"
+            aria-label="购物车"
+          >
+            <span className="text-lg">🛒</span>
+          </Link>
+          <Link
             href="/notifications"
             className="flex h-8 w-8 items-center justify-center rounded-full transition hover:bg-gray-100"
             aria-label="消息"

@@ -1,10 +1,10 @@
 'use client';
 
-import { Suspense, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button, Card, PriceText } from '@/components/ui';
-import { MOCK_CART_ITEMS } from '@/lib/mock-cart';
+import { getCartItems, removeCartItems, type CartItem } from '@/lib/cart-store';
 import { saveOrder, genOrderNo, type LocalOrder } from '@/lib/order-store';
 
 const mockAddresses = [
@@ -30,6 +30,19 @@ const mockAddresses = [
   },
 ];
 
+interface CheckoutItem {
+  cartItemId: number;
+  spuId: number;
+  skuId: number;
+  shopId: number;
+  shopName: string;
+  title: string;
+  spec: string;
+  price: string;
+  quantity: number;
+  emoji: string;
+}
+
 export default function CheckoutPageWrapper() {
   return (
     <Suspense
@@ -54,59 +67,41 @@ function CheckoutPage() {
   const [selectedCouponId, setSelectedCouponId] = useState<number | null>(1);
   const [remark, setRemark] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [checkoutItems, setCheckoutItems] = useState<CheckoutItem[]>([]);
 
-  const checkoutItems = useMemo(() => {
+  // 首次挂载：从 URL 参数 + localStorage 生成结算列表
+  useEffect(() => {
     const itemParams = searchParams.getAll('item');
+    const cartItems = getCartItems();
 
     if (itemParams.length === 0) {
-      return MOCK_CART_ITEMS.filter((i) => !i.invalid).map((i) => ({
-        id: i.id,
-        shopId: i.shopId,
-        shopName: i.shopName,
-        title: i.title,
-        spec: i.spec,
-        price: i.price,
-        quantity: i.quantity,
-        emoji: i.emoji,
-      }));
-    }
-
-    const result: {
-      id: number;
-      shopId: number;
-      shopName: string;
-      title: string;
-      spec: string;
-      price: string;
-      quantity: number;
-      emoji: string;
-    }[] = [];
-
-    for (const param of itemParams) {
-      const [idStr, qtyStr] = param.split(':');
-      const id = Number(idStr);
-      const qty = Number(qtyStr) || 1;
-      const found = MOCK_CART_ITEMS.find((i) => i.id === id);
-      if (found) {
-        result.push({
-          id: found.id,
-          shopId: found.shopId,
-          shopName: found.shopName,
-          title: found.title,
-          spec: found.spec,
-          price: found.price,
-          quantity: qty,
-          emoji: found.emoji,
-        });
+      // 没传参：默认取所有有效且勾选的商品
+      const list = cartItems
+        .filter((i) => i.selected && !i.invalid)
+        .map(cartItemToCheckoutItem);
+      setCheckoutItems(list);
+    } else {
+      // 解析 URL 参数 item=id:qty
+      const result: CheckoutItem[] = [];
+      for (const param of itemParams) {
+        const [idStr, qtyStr] = param.split(':');
+        const id = Number(idStr);
+        const qty = Number(qtyStr) || 1;
+        const found = cartItems.find((i) => i.id === id);
+        if (found) {
+          result.push({ ...cartItemToCheckoutItem(found), quantity: qty });
+        }
       }
+      setCheckoutItems(result);
     }
-    return result;
+    setMounted(true);
   }, [searchParams]);
 
   const shopGroups = useMemo(() => {
     const groups: Record<
       number,
-      { shopId: number; shopName: string; items: typeof checkoutItems }
+      { shopId: number; shopName: string; items: CheckoutItem[] }
     > = {};
     for (const item of checkoutItems) {
       if (!groups[item.shopId]) {
@@ -158,9 +153,9 @@ function CheckoutPage() {
           shopId: g.shopId,
           shopName: g.shopName,
           items: g.items.map((item) => ({
-            id: item.id,
-            spuId: item.id,
-            skuId: item.id,
+            id: item.cartItemId,
+            spuId: item.spuId,
+            skuId: item.skuId,
             title: item.title,
             spec: item.spec,
             price: item.price,
@@ -176,6 +171,9 @@ function CheckoutPage() {
       };
       saveOrder(order);
 
+      // 从购物车移除已下单的商品
+      removeCartItems(checkoutItems.map((i) => i.cartItemId));
+
       await new Promise((r) => setTimeout(r, 300));
       window.location.href = `/pay/${orderNo}`;
     } catch (err) {
@@ -184,6 +182,15 @@ function CheckoutPage() {
       setSubmitting(false);
     }
   };
+
+  // 首次渲染（避免 hydration 不一致）
+  if (!mounted) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <p className="text-text-secondary">加载中...</p>
+      </div>
+    );
+  }
 
   if (checkoutItems.length === 0) {
     return (
@@ -240,7 +247,7 @@ function CheckoutPage() {
             <h3 className="mb-3 text-sm font-medium">🏪 {group.shopName}</h3>
             <div className="space-y-3">
               {group.items.map((item) => (
-                <div key={item.id} className="flex gap-3">
+                <div key={item.cartItemId} className="flex gap-3">
                   <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-md bg-bg-page text-3xl">
                     {item.emoji}
                   </div>
@@ -421,4 +428,20 @@ function CheckoutPage() {
       )}
     </div>
   );
+}
+
+// 工具函数：CartItem → CheckoutItem
+function cartItemToCheckoutItem(c: CartItem): CheckoutItem {
+  return {
+    cartItemId: c.id,
+    spuId: c.spuId,
+    skuId: c.skuId,
+    shopId: c.shopId,
+    shopName: c.shopName,
+    title: c.title,
+    spec: c.spec,
+    price: c.price,
+    quantity: c.quantity,
+    emoji: c.emoji,
+  };
 }

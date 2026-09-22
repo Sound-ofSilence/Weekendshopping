@@ -84,3 +84,30 @@ export function genOrderNo(): string {
     .padStart(6, '0');
   return `${ts}${rand}`;
 }
+
+/**
+ * 获取当前用户所有订单（按创建时间倒序）
+ */
+export function listAllOrders(): LocalOrder[] {
+  if (typeof window === 'undefined') return [];
+  const orders: LocalOrder[] = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith(STORAGE_PREFIX)) {
+      const raw = localStorage.getItem(key);
+      if (raw) {
+        try {
+          orders.push(JSON.parse(raw) as LocalOrder);
+        } catch {
+          // 忽略解析失败的
+        }
+      }
+    }
+  }
+  // 按创建时间倒序（最新的在前面）
+  return orders.sort((a, b) => {
+    const ta = new Date(a.createdAt).getTime();
+    const tb = new Date(b.createdAt).getTime();
+    return tb - ta;
+  });
+}

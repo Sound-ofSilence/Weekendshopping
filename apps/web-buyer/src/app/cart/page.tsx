@@ -1,17 +1,38 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button, Card, PriceText } from '@/components/ui';
-import { MOCK_CART_ITEMS, type CartItem } from '@/lib/mock-cart';
-
-const initialItems: CartItem[] = MOCK_CART_ITEMS;
+import {
+  getCartItems,
+  updateCartItem,
+  updateItemsSelected,
+  removeCartItem,
+  removeCartItems,
+  clearInvalidItems,
+  onCartUpdated,
+  type CartItem,
+} from '@/lib/cart-store';
 
 export default function CartPage() {
   const router = useRouter();
-  const [items, setItems] = useState<CartItem[]>(initialItems);
+  const [items, setItems] = useState<CartItem[]>([]);
   const [editing, setEditing] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  // 初次加载 + 订阅跨页面更新
+  useEffect(() => {
+    setItems(getCartItems());
+    setMounted(true);
+    const unsubscribe = onCartUpdated(() => {
+      setItems(getCartItems());
+    });
+    return unsubscribe;
+  }, []);
+
+  // 每次 items 变化后从 store 重新读（保证一致）
+  const refresh = () => setItems(getCartItems());
 
   const validItems = items.filter((i) => !i.invalid);
   const selectedItems = validItems.filter((i) => i.selected);
@@ -25,7 +46,11 @@ export default function CartPage() {
   const shopGroups = items.reduce(
     (groups, item) => {
       if (!groups[item.shopId]) {
-        groups[item.shopId] = { shopId: item.shopId, shopName: item.shopName, items: [] };
+        groups[item.shopId] = {
+          shopId: item.shopId,
+          shopName: item.shopName,
+          items: [],
+        };
       }
       groups[item.shopId].items.push(item);
       return groups;
@@ -33,44 +58,57 @@ export default function CartPage() {
     {} as Record<number, { shopId: number; shopName: string; items: CartItem[] }>,
   );
 
+  // ==================== 操作 ====================
+
   const toggleSelect = (id: number) => {
-    setItems((prev) =>
-      prev.map((i) => (i.id === id ? { ...i, selected: !i.selected } : i)),
-    );
+    const target = items.find((i) => i.id === id);
+    if (!target) return;
+    updateCartItem(id, { selected: !target.selected });
+    refresh();
   };
 
   const toggleShop = (shopId: number) => {
     const shopItems = items.filter((i) => i.shopId === shopId && !i.invalid);
     const allShopSelected = shopItems.every((i) => i.selected);
-    setItems((prev) =>
-      prev.map((i) =>
-        i.shopId === shopId && !i.invalid ? { ...i, selected: !allShopSelected } : i,
-      ),
-    );
+    updateItemsSelected(shopItems.map((i) => i.id), !allShopSelected);
+    refresh();
   };
 
   const toggleAll = () => {
-    setItems((prev) =>
-      prev.map((i) => (i.invalid ? i : { ...i, selected: !allSelected })),
-    );
+    updateItemsSelected(validItems.map((i) => i.id), !allSelected);
+    refresh();
   };
 
   const updateQuantity = (id: number, delta: number) => {
-    setItems((prev) =>
-      prev.map((i) =>
-        i.id === id ? { ...i, quantity: Math.max(1, i.quantity + delta) } : i,
-      ),
-    );
+    const target = items.find((i) => i.id === id);
+    if (!target) return;
+    updateCartItem(id, { quantity: target.quantity + delta });
+    refresh();
   };
 
-  const removeItem = (id: number) => {
+  const handleRemoveItem = (id: number) => {
     if (confirm('确定删除这件商品吗？')) {
-      setItems((prev) => prev.filter((i) => i.id !== id));
+      removeCartItem(id);
+      refresh();
     }
   };
 
-  const clearInvalid = () => {
-    setItems((prev) => prev.filter((i) => !i.invalid));
+  const handleClearInvalid = () => {
+    if (confirm('确定清空所有失效商品吗？')) {
+      clearInvalidItems();
+      refresh();
+    }
+  };
+
+  const handleDeleteSelected = () => {
+    if (selectedItems.length === 0) {
+      alert('请先选择要删除的商品');
+      return;
+    }
+    if (confirm(`确定删除选中的 ${selectedItems.length} 件商品吗？`)) {
+      removeCartItems(selectedItems.map((i) => i.id));
+      refresh();
+    }
   };
 
   const handleCheckout = () => {
@@ -78,13 +116,23 @@ export default function CartPage() {
       alert('请先选择要结算的商品');
       return;
     }
-    // 把选中的商品 ID 和数量拼成 URL 参数
     const params = new URLSearchParams();
     selectedItems.forEach((item) => {
       params.append('item', `${item.id}:${item.quantity}`);
     });
     router.push(`/checkout?${params.toString()}`);
   };
+
+  // ==================== 渲染 ====================
+
+  // 首次渲染（避免 hydration 不一致）
+  if (!mounted) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <p className="text-text-secondary">加载中...</p>
+      </div>
+    );
+  }
 
   if (items.length === 0) {
     return (
@@ -102,7 +150,10 @@ export default function CartPage() {
     <div className="min-h-screen bg-bg-page pb-32">
       <div className="sticky top-14 z-40 flex items-center justify-between border-b border-border bg-bg-card px-4 py-3">
         <h1 className="text-base font-bold">
-          购物车 <span className="text-sm font-normal text-text-secondary">({items.length})</span>
+          购物车{' '}
+          <span className="text-sm font-normal text-text-secondary">
+            ({items.length})
+          </span>
         </h1>
         <button
           onClick={() => setEditing(!editing)}
@@ -123,10 +174,11 @@ export default function CartPage() {
                 <input
                   type="checkbox"
                   checked={shopAllSelected}
+                  disabled={shopValidItems.length === 0}
                   onChange={() => toggleShop(group.shopId)}
-                  className="h-4 w-4 cursor-pointer accent-primary"
+                  className="h-4 w-4 cursor-pointer accent-primary disabled:cursor-not-allowed"
                 />
-                <span className="text-sm font-medium">{group.shopName}</span>
+                <span className="text-sm font-medium">🏪 {group.shopName}</span>
               </div>
 
               {group.items.map((item) => (
@@ -162,7 +214,7 @@ export default function CartPage() {
                       <PriceText price={item.price} size="sm" />
                       {item.invalid ? (
                         <button
-                          onClick={() => removeItem(item.id)}
+                          onClick={() => handleRemoveItem(item.id)}
                           className="cursor-pointer text-xs text-text-secondary hover:text-error"
                         >
                           删除
@@ -175,7 +227,9 @@ export default function CartPage() {
                           >
                             −
                           </button>
-                          <span className="w-8 text-center text-sm">{item.quantity}</span>
+                          <span className="w-8 text-center text-sm">
+                            {item.quantity}
+                          </span>
                           <button
                             onClick={() => updateQuantity(item.id, 1)}
                             className="flex h-6 w-6 cursor-pointer items-center justify-center rounded border border-border text-sm"
@@ -197,7 +251,7 @@ export default function CartPage() {
           <div className="flex items-center justify-between px-2 text-xs text-text-secondary">
             <span>失效商品 {items.filter((i) => i.invalid).length} 件</span>
             <button
-              onClick={clearInvalid}
+              onClick={handleClearInvalid}
               className="cursor-pointer hover:text-error"
             >
               清空失效
@@ -231,20 +285,14 @@ export default function CartPage() {
             </div>
 
             {editing ? (
-              <Button
-                variant="danger"
-                onClick={() => {
-                  if (confirm(`确定删除选中的 ${selectedItems.length} 件商品吗？`)) {
-                    setItems((prev) =>
-                      prev.filter((i) => !i.selected || i.invalid),
-                    );
-                  }
-                }}
-              >
+              <Button variant="danger" onClick={handleDeleteSelected}>
                 删除
               </Button>
             ) : (
-              <Button onClick={handleCheckout} disabled={selectedItems.length === 0}>
+              <Button
+                onClick={handleCheckout}
+                disabled={selectedItems.length === 0}
+              >
                 去结算({selectedItems.length})
               </Button>
             )}
