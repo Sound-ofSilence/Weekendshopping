@@ -1,10 +1,11 @@
 'use client';
-import { saveOrder, genOrderNo, type LocalOrder } from '@/lib/order-store';
-import { useMemo, useState } from 'react';
+
+import { Suspense, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button, Card, PriceText } from '@/components/ui';
 import { MOCK_CART_ITEMS } from '@/lib/mock-cart';
+import { saveOrder, genOrderNo, type LocalOrder } from '@/lib/order-store';
 
 const mockAddresses = [
   {
@@ -29,7 +30,21 @@ const mockAddresses = [
   },
 ];
 
-export default function CheckoutPage() {
+export default function CheckoutPageWrapper() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-[60vh] items-center justify-center">
+          <p className="text-text-secondary">加载中...</p>
+        </div>
+      }
+    >
+      <CheckoutPage />
+    </Suspense>
+  );
+}
+
+function CheckoutPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -40,11 +55,9 @@ export default function CheckoutPage() {
   const [remark, setRemark] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  // 从 URL 读取购物车选择的商品（格式：item=1:2&item=3:1）
   const checkoutItems = useMemo(() => {
     const itemParams = searchParams.getAll('item');
 
-    // 如果没有传参（比如直接访问 /checkout），默认取全部有效商品
     if (itemParams.length === 0) {
       return MOCK_CART_ITEMS.filter((i) => !i.invalid).map((i) => ({
         id: i.id,
@@ -58,7 +71,6 @@ export default function CheckoutPage() {
       }));
     }
 
-    // 解析 URL 参数
     const result: {
       id: number;
       shopId: number;
@@ -91,15 +103,10 @@ export default function CheckoutPage() {
     return result;
   }, [searchParams]);
 
-  // 按店铺分组
   const shopGroups = useMemo(() => {
     const groups: Record<
       number,
-      {
-        shopId: number;
-        shopName: string;
-        items: typeof checkoutItems;
-      }
+      { shopId: number; shopName: string; items: typeof checkoutItems }
     > = {};
     for (const item of checkoutItems) {
       if (!groups[item.shopId]) {
@@ -134,7 +141,6 @@ export default function CheckoutPage() {
     setSubmitting(true);
 
     try {
-      // 生成订单对象
       const orderNo = genOrderNo();
       const order: LocalOrder = {
         orderNo,
@@ -170,7 +176,6 @@ export default function CheckoutPage() {
       };
       saveOrder(order);
 
-      // 跳转
       await new Promise((r) => setTimeout(r, 300));
       window.location.href = `/pay/${orderNo}`;
     } catch (err) {
@@ -180,7 +185,6 @@ export default function CheckoutPage() {
     }
   };
 
-  // 空状态
   if (checkoutItems.length === 0) {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4">
@@ -203,7 +207,6 @@ export default function CheckoutPage() {
       </div>
 
       <div className="mx-auto max-w-screen-xl space-y-2 p-4">
-        {/* 收货地址 */}
         <button
           onClick={() => setShowAddressSheet(true)}
           className="w-full cursor-pointer text-left"
@@ -232,7 +235,6 @@ export default function CheckoutPage() {
           </Card>
         </button>
 
-        {/* 商品清单（按店铺分组） */}
         {shopGroups.map((group) => (
           <Card key={group.shopId} className="rounded-none p-4">
             <h3 className="mb-3 text-sm font-medium">🏪 {group.shopName}</h3>
@@ -284,7 +286,6 @@ export default function CheckoutPage() {
           </Card>
         ))}
 
-        {/* 价格明细 */}
         <Card className="rounded-none p-4">
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
@@ -309,7 +310,6 @@ export default function CheckoutPage() {
         </Card>
       </div>
 
-      {/* 底部操作栏 */}
       <div className="fixed bottom-14 left-0 right-0 z-40 border-t border-border bg-bg-card md:bottom-0">
         <div className="mx-auto flex max-w-screen-xl items-center justify-end gap-3 px-4 py-3">
           <div className="text-right">
@@ -324,7 +324,6 @@ export default function CheckoutPage() {
         </div>
       </div>
 
-      {/* 地址选择抽屉 */}
       {showAddressSheet && (
         <>
           <div
@@ -374,7 +373,6 @@ export default function CheckoutPage() {
         </>
       )}
 
-      {/* 优惠券选择抽屉 */}
       {showCouponSheet && (
         <>
           <div

@@ -1,11 +1,25 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button, Card } from '@/components/ui';
 
-export default function PayResultPage() {
+export default function PayResultPageWrapper() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center">
+          <p className="text-text-secondary">加载中...</p>
+        </div>
+      }
+    >
+      <PayResultPage />
+    </Suspense>
+  );
+}
+
+function PayResultPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const orderNo = searchParams.get('orderNo') || '';
