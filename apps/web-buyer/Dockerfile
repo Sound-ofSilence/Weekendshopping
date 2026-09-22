@@ -1,31 +1,20 @@
-# ============ 依赖阶段 ============
-FROM node:20-slim AS deps
-
-WORKDIR /app
-
-# 复制 workspace 清单
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY apps/web-buyer/package.json ./apps/web-buyer/package.json
-COPY apps/api/package.json ./apps/api/package.json
-
-# 安装 pnpm
-RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
-
-# 安装所有依赖
-RUN pnpm install --frozen-lockfile
-
 # ============ 构建阶段 ============
 FROM node:20-slim AS builder
 
 WORKDIR /app
 
+# 安装 pnpm
 RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
 
-# 从 deps 阶段拷贝 node_modules
-COPY --from=deps /app/node_modules ./node_modules
-
-# 拷贝源码
+# 复制 workspace 清单 + 两个子包 package.json
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/web-buyer/package.json ./apps/web-buyer/package.json
+COPY apps/api/package.json ./apps/api/package.json
+
+# 安装所有依赖（这一步会用缓存，package.json 没变就不重装）
+RUN pnpm install --frozen-lockfile
+
+# 复制前端源码
 COPY apps/web-buyer ./apps/web-buyer
 
 # 构建（生产 API 地址走 Nginx 同源 /api）
