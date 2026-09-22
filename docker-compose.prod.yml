@@ -6,8 +6,6 @@ services:
     container_name: weekend-api
     restart: always
     env_file: .env.prod
-    ports:
-      - "4000:4000"
     depends_on:
       weekend-postgres:
         condition: service_healthy
@@ -18,12 +16,28 @@ services:
     networks:
       - weekend-net
     mem_limit: 768m
+
+  weekend-web:
+    build:
+      context: .
+      dockerfile: apps/web-buyer/Dockerfile
+    container_name: weekend-web
+    restart: always
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      NEXT_PUBLIC_API_BASE: /api
+    depends_on:
+      - weekend-api
+    networks:
+      - weekend-net
+    mem_limit: 384m
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 60s
+      start_period: 40s
 
   weekend-postgres:
     image: postgres:15-alpine
@@ -87,6 +101,7 @@ services:
       - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
       - weekend-api
+      - weekend-web
     networks:
       - weekend-net
     mem_limit: 64m
