@@ -188,20 +188,28 @@ export default function OrderDetailPage() {
             </>
           )}
           {status === 'PAID' && (
-            <Button variant="outline" onClick={() => alert('退款申请（Mock）')}>
+            <Button
+              variant="outline"
+              onClick={() => router.push(`/orders/${order.orderNo}/refund`)}
+            >
               申请退款
             </Button>
           )}
           {status === 'SHIPPED' && (
             <>
-              <Button variant="outline" onClick={() => alert('查看物流（Mock）')}>
+              <Button
+                variant="outline"
+                onClick={() => router.push(`/orders/${order.orderNo}/logistics`)}
+              >
                 查看物流
               </Button>
               <Button onClick={handleConfirm}>确认收货</Button>
             </>
           )}
           {status === 'RECEIVED' && (
-            <Button onClick={() => alert('去评价（Mock）')}>去评价</Button>
+            <Button onClick={() => router.push(`/orders/${order.orderNo}/review`)}>
+              去评价
+            </Button>
           )}
           {status === 'CANCELLED' && (
             <Link href="/">
