@@ -31,6 +31,8 @@ export default function SearchPageWrapper() {
 
 function SearchPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialKeyword = searchParams.get('keyword') || '';
   const initialCategoryId = searchParams.get('categoryId')
     ? Number(searchParams.get('categoryId'))
     : undefined;
