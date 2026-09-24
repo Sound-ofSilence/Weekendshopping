@@ -1,10 +1,12 @@
 /**
  * API 客户端
- * 开发环境走 localhost:4000（Docker 本地 api）
- * 生产环境走同源（Nginx 反代 /api）
+ * 统一使用 /api 前缀：
+ *   - 本地开发：Next.js rewrite 转发到 http://localhost:4000
+ *   - 生产环境：Nginx 转发到 weekend-api:4000
  */
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:4000';
+const API_BASE = '/api';
+const TOKEN_KEY = 'ws_auth_token';
 
 interface ApiResponse<T> {
   code: number;
@@ -27,7 +29,7 @@ async function request<T>(
   options: RequestInit = {},
 ): Promise<T> {
   const token =
-    typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+    typeof window !== 'undefined' ? localStorage.getItem(TOKEN_KEY) : null;
 
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
@@ -38,10 +40,24 @@ async function request<T>(
     (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${API_BASE}${path}`, {
+  const url = path.startsWith('http') ? path : `${API_BASE}${path}`;
+
+  const res = await fetch(url, {
     ...options,
     headers,
   });
+
+  // 处理非 2xx 响应
+  if (!res.ok) {
+    let msg = `HTTP ${res.status}`;
+    try {
+      const errJson = await res.json();
+      msg = errJson.message || msg;
+    } catch {
+      // 忽略
+    }
+    throw new ApiError(res.status, msg);
+  }
 
   const json: ApiResponse<T> = await res.json();
 
@@ -62,6 +78,11 @@ export const api = {
   patch: <T>(path: string, body?: unknown) =>
     request<T>(path, {
       method: 'PATCH',
+      body: body ? JSON.stringify(body) : undefined,
+    }),
+  put: <T>(path: string, body?: unknown) =>
+    request<T>(path, {
+      method: 'PUT',
       body: body ? JSON.stringify(body) : undefined,
     }),
   delete: <T>(path: string) => request<T>(path, { method: 'DELETE' }),

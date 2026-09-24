@@ -25,20 +25,19 @@ export default function LoginPage() {
     return () => clearTimeout(timer);
   }, [countdown]);
 
-  const handleSendCode = () => {
+  const handleSendCode = async () => {
     if (!/^1[3-9]\d{9}$/.test(phone)) {
       alert('请输入正确的手机号');
       return;
     }
     setSending(true);
-    const result = sendSmsCode(phone);
+    const result = await sendSmsCode(phone);
     setSending(false);
     if (result.success) {
       setCountdown(60);
-      // 演示环境提示验证码
-      alert(`验证码已发送（演示：${result.code}）`);
+      alert('验证码已发送，请查看后端日志');
     } else {
-      alert('发送失败，请重试');
+      alert(result.message || '发送失败，请重试');
     }
   };
 
@@ -58,14 +57,14 @@ export default function LoginPage() {
         setSubmitting(false);
         return;
       }
-      result = loginWithSms(phone, code);
+      result = await loginWithSms(phone, code);
     } else {
       if (!password) {
         alert('请输入密码');
         setSubmitting(false);
         return;
       }
-      result = loginWithPassword(phone, password);
+      result = await loginWithPassword(phone, password);
     }
 
     if (result.success) {
@@ -175,7 +174,7 @@ export default function LoginPage() {
         </div>
 
         <p className="mt-6 text-center text-xs text-text-disabled">
-          演示环境提示：验证码固定为 123456
+          验证码会打印在后端日志中
         </p>
       </div>
     </div>

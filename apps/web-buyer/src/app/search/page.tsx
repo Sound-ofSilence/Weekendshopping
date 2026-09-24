@@ -1,10 +1,10 @@
 'use client';
 
-import { Suspense, useMemo, useState } from 'react';
+import { Suspense, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button, Card, Input, PriceText } from '@/components/ui';
-import { MOCK_PRODUCTS, type MockProduct } from '@/lib/mock-products';
+import { searchProducts, type ProductListItem } from '@/lib/product-api';
 
 type SortType = 'default' | 'sales' | 'price_asc' | 'price_desc';
 
@@ -31,43 +31,48 @@ export default function SearchPageWrapper() {
 
 function SearchPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const initialKeyword = searchParams.get('keyword') || '';
+  const initialCategoryId = searchParams.get('categoryId')
+    ? Number(searchParams.get('categoryId'))
+    : undefined;
 
   const [keyword, setKeyword] = useState(initialKeyword);
   const [sort, setSort] = useState<SortType>('default');
   const [showFilter, setShowFilter] = useState(false);
+  const [products, setProducts] = useState<ProductListItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadProducts = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const list = await searchProducts({
+        keyword: initialKeyword || undefined,
+        categoryId: initialCategoryId,
+        sort: sort === 'default' ? undefined : sort,
+        page: 1,
+        pageSize: 40,
+      });
+      setProducts(list);
+    } catch (err) {
+      console.error('搜索失败:', err);
+      setError('加载失败，请重试');
+    } finally {
+      setLoading(false);
+    }
+  }, [initialKeyword, initialCategoryId, sort]);
+
+  useEffect(() => {
+    loadProducts();
+  }, [loadProducts]);
 
   const handleSearch = () => {
     if (keyword.trim()) {
-      router.push(`/search?keyword=${encodeURIComponent(keyword)}`);
+      router.push(`/search?keyword=${encodeURIComponent(keyword.trim())}`);
     } else {
       router.push('/search');
     }
   };
-
-  // 根据关键词过滤 + 排序
-  const sortedProducts = useMemo(() => {
-    let list: MockProduct[] = [...MOCK_PRODUCTS];
-
-    // 关键词过滤（标题包含）
-    if (initialKeyword) {
-      const kw = initialKeyword.toLowerCase();
-      list = list.filter((p) => p.title.toLowerCase().includes(kw));
-    }
-
-    // 排序
-    switch (sort) {
-      case 'sales':
-        return list.sort((a, b) => parseSales(b.sales) - parseSales(a.sales));
-      case 'price_asc':
-        return list.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
-      case 'price_desc':
-        return list.sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
-      default:
-        return list;
-    }
-  }, [initialKeyword, sort]);
 
   return (
     <div className="min-h-screen bg-bg-page">
@@ -122,69 +127,85 @@ function SearchPage() {
 
       {/* 商品列表 */}
       <div className="mx-auto max-w-screen-xl px-4 py-4">
-        <p className="mb-3 text-xs text-text-secondary">
-          {initialKeyword ? (
-            <>
-              搜索「{initialKeyword}」找到{' '}
-              <span className="font-medium text-text-primary">
-                {sortedProducts.length}
-              </span>{' '}
-              件商品
-            </>
-          ) : (
-            <>
-              找到{' '}
-              <span className="font-medium text-text-primary">
-                {sortedProducts.length}
-              </span>{' '}
-              件商品
-            </>
-          )}
-        </p>
-
-        {sortedProducts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-4 py-20">
-            <div className="text-6xl">🔍</div>
-            <p className="text-text-secondary">没有找到相关商品</p>
-            <Button onClick={() => router.push('/search')}>查看全部商品</Button>
-          </div>
-        ) : (
+        {loading && (
           <div className="space-y-3">
-            {sortedProducts.map((p) => (
-              <Link key={p.id} href={`/product/${p.id}`}>
-                <Card className="flex gap-3 p-3 transition hover:shadow-md">
-                  <div className="flex h-24 w-24 flex-shrink-0 items-center justify-center rounded-md bg-bg-page text-5xl">
-                    {p.emoji}
-                  </div>
-                  <div className="flex flex-1 flex-col justify-between overflow-hidden">
-                    <div>
-                      <h3 className="line-clamp-2 text-sm text-text-primary">
-                        {p.title}
-                      </h3>
-                      <div className="mt-1 flex flex-wrap gap-1">
-                        {p.tags.map((tag) => (
-                          <span
-                            key={tag}
-                            className="rounded border border-primary/30 px-1.5 py-0.5 text-xs text-primary"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="flex items-end justify-between">
-                      <PriceText price={p.price} originalPrice={p.originalPrice} size="md" />
-                      <span className="text-xs text-text-disabled">已售 {p.sales}</span>
-                    </div>
-                  </div>
-                </Card>
-              </Link>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Card key={i} className="flex gap-3 p-3">
+                <div className="h-24 w-24 flex-shrink-0 animate-pulse rounded-md bg-gray-200" />
+                <div className="flex flex-1 flex-col gap-2">
+                  <div className="h-4 animate-pulse rounded bg-gray-200" />
+                  <div className="h-4 w-2/3 animate-pulse rounded bg-gray-200" />
+                  <div className="mt-auto h-6 w-24 animate-pulse rounded bg-gray-200" />
+                </div>
+              </Card>
             ))}
           </div>
         )}
+
+        {!loading && error && (
+          <div className="flex flex-col items-center justify-center gap-4 py-20">
+            <div className="text-6xl">😢</div>
+            <p className="text-text-secondary">{error}</p>
+            <Button onClick={loadProducts}>重新加载</Button>
+          </div>
+        )}
+
+        {!loading && !error && products.length === 0 && (
+          <div className="flex flex-col items-center justify-center gap-4 py-20">
+            <div className="text-6xl">🔍</div>
+            <p className="text-text-secondary">
+             {initialKeyword
+                ? `没有找到「${initialKeyword}」相关商品`
+                 : initialCategoryId
+                  ? '该分类暂无商品'
+                : '暂无商品'}
+            </p>
+            <Button onClick={() => router.push('/search')}>查看全部商品</Button>
+          </div>
+        )}
+
+        {!loading && !error && products.length > 0 && (
+          <>
+            <p className="mb-3 text-xs text-text-secondary">
+              {initialKeyword ? (
+                <>
+                  搜索「{initialKeyword}」找到{' '}
+                  <span className="font-medium text-text-primary">{products.length}</span> 件商品
+                </>
+              ) : (
+                <>
+                  共{' '}
+                  <span className="font-medium text-text-primary">{products.length}</span> 件商品
+                </>
+              )}
+            </p>
+
+            <div className="space-y-3">
+              {products.map((p) => (
+                <Link key={p.id} href={`/product/${p.id}`}>
+                  <Card className="flex gap-3 p-3 transition hover:shadow-md">
+                    <div className="flex h-24 w-24 flex-shrink-0 items-center justify-center rounded-md bg-bg-page text-5xl">
+                      {p.emoji}
+                    </div>
+                    <div className="flex flex-1 flex-col justify-between overflow-hidden">
+                      <div>
+                        <h3 className="line-clamp-2 text-sm text-text-primary">{p.title}</h3>
+                        <p className="mt-1 text-xs text-text-secondary">{p.shopName}</p>
+                      </div>
+                      <div className="flex items-end justify-between">
+                        <PriceText price={p.price} size="md" />
+                        <span className="text-xs text-text-disabled">已售 {p.sales}</span>
+                      </div>
+                    </div>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
-      {/* 筛选抽屉 */}
+      {/* 筛选抽屉（占位） */}
       {showFilter && (
         <>
           <div
@@ -201,63 +222,13 @@ function SearchPage() {
                 ✕
               </button>
             </div>
-
-            <div className="space-y-6">
-              <section>
-                <h4 className="mb-3 text-sm font-bold text-text-primary">价格区间</h4>
-                <div className="flex gap-2">
-                  <Input placeholder="最低价" />
-                  <Input placeholder="最高价" />
-                </div>
-              </section>
-
-              <section>
-                <h4 className="mb-3 text-sm font-bold text-text-primary">发货地</h4>
-                <div className="flex flex-wrap gap-2">
-                  {['不限', '广东', '浙江', '江苏', '北京', '上海'].map((loc) => (
-                    <button
-                      key={loc}
-                      className="cursor-pointer rounded-md border border-border px-3 py-1.5 text-xs text-text-secondary transition hover:border-primary hover:text-primary"
-                    >
-                      {loc}
-                    </button>
-                  ))}
-                </div>
-              </section>
-
-              <section>
-                <h4 className="mb-3 text-sm font-bold text-text-primary">服务</h4>
-                <div className="flex flex-wrap gap-2">
-                  {['包邮', '7 天无理由', '运费险', '闪电发货'].map((svc) => (
-                    <button
-                      key={svc}
-                      className="cursor-pointer rounded-md border border-border px-3 py-1.5 text-xs text-text-secondary transition hover:border-primary hover:text-primary"
-                    >
-                      {svc}
-                    </button>
-                  ))}
-                </div>
-              </section>
-            </div>
-
-            <div className="mt-8 flex gap-2">
-              <Button variant="outline" className="flex-1">
-                重置
-              </Button>
-              <Button className="flex-1" onClick={() => setShowFilter(false)}>
-                确定
-              </Button>
-            </div>
+            <p className="text-sm text-text-secondary">筛选功能将在 P8 完善</p>
+            <Button className="mt-6 w-full" onClick={() => setShowFilter(false)}>
+              关闭
+            </Button>
           </div>
         </>
       )}
     </div>
   );
-}
-
-function parseSales(s: string): number {
-  if (s.includes('万')) {
-    return parseFloat(s.replace('万', '')) * 10000;
-  }
-  return parseFloat(s);
 }

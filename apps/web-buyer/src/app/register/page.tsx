@@ -23,19 +23,19 @@ export default function RegisterPage() {
     return () => clearTimeout(timer);
   }, [countdown]);
 
-  const handleSendCode = () => {
+  const handleSendCode = async () => {
     if (!/^1[3-9]\d{9}$/.test(phone)) {
       alert('请输入正确的手机号');
       return;
     }
     setSending(true);
-    const result = sendSmsCode(phone);
+    const result = await sendSmsCode(phone);
     setSending(false);
     if (result.success) {
       setCountdown(60);
-      alert(`验证码已发送（演示：${result.code}）`);
+      alert('验证码已发送，请查看后端日志');
     } else {
-      alert('发送失败，请重试');
+      alert(result.message || '发送失败，请重试');
     }
   };
 
@@ -48,7 +48,7 @@ export default function RegisterPage() {
     if (!agreed) return alert('请先同意用户协议和隐私政策');
 
     setSubmitting(true);
-    const result = register(phone, password, code);
+    const result = await register(phone, password, code);
 
     if (result.success) {
       alert('注册成功，已自动登录');
@@ -150,7 +150,7 @@ export default function RegisterPage() {
         </div>
 
         <p className="mt-6 text-center text-xs text-text-disabled">
-          演示环境提示：验证码固定为 123456
+          验证码会打印在后端日志中
         </p>
       </div>
     </div>

@@ -100,9 +100,9 @@ export default function MePage() {
             </div>
             {user ? (
               <button
-                onClick={() => {
+                onClick={async () => {
                   if (confirm('确定退出登录吗？')) {
-                    logout();
+                    await logout();
                   }
                 }}
                 className="cursor-pointer rounded-full bg-white/20 px-4 py-1.5 text-sm backdrop-blur transition hover:bg-white/30"
