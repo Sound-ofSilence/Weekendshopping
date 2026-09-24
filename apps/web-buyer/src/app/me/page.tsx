@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Card } from '@/components/ui';
 import { listAllOrders } from '@/lib/order-store';
 import { getCartCount, onCartUpdated } from '@/lib/cart-store';
+import { getUser, isLoggedIn, logout, onAuthUpdated, type AuthUser } from '@/lib/auth-store';
 
 interface OrderCounts {
   pendingPay: number;
@@ -23,6 +24,7 @@ export default function MePage() {
     pendingReview: 0,
   });
   const [cartCount, setCartCount] = useState(0);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -35,12 +37,17 @@ export default function MePage() {
         pendingReview: orders.filter((o) => o.status === 'RECEIVED').length,
       });
       setCartCount(getCartCount());
+      setUser(getUser());
     };
 
     refresh();
     setMounted(true);
     const unsubscribe = onCartUpdated(refresh);
-    return unsubscribe;
+    const unsubAuth = onAuthUpdated(refresh);
+    return () => {
+      unsubscribe();
+      unsubAuth();
+    };
   }, []);
 
   const quickOrders = [
@@ -77,21 +84,39 @@ export default function MePage() {
     <div className="min-h-screen bg-bg-page pb-24">
       <div className="mx-auto max-w-screen-xl space-y-3 p-4">
         {/* 用户卡片 */}
+        {/* 用户卡片 */}
         <Card className="rounded-none bg-gradient-to-r from-orange-400 to-red-500 p-4 text-white">
           <div className="flex items-center gap-3">
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/20 text-4xl backdrop-blur">
-              👤
+              {user?.avatar || '👤'}
             </div>
             <div className="flex-1">
-              <h2 className="text-lg font-bold">未登录用户</h2>
-              <p className="mt-1 text-xs opacity-90">点击右侧登录/注册</p>
+              <h2 className="text-lg font-bold">
+                {user ? user.nickname : '未登录用户'}
+              </h2>
+              <p className="mt-1 text-xs opacity-90">
+                {user ? user.phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2') : '点击右侧登录/注册'}
+              </p>
             </div>
-            <button
-              onClick={() => alert('登录功能开发中（F5）')}
-              className="cursor-pointer rounded-full bg-white/20 px-4 py-1.5 text-sm backdrop-blur transition hover:bg-white/30"
-            >
-              登录
-            </button>
+            {user ? (
+              <button
+                onClick={() => {
+                  if (confirm('确定退出登录吗？')) {
+                    logout();
+                  }
+                }}
+                className="cursor-pointer rounded-full bg-white/20 px-4 py-1.5 text-sm backdrop-blur transition hover:bg-white/30"
+              >
+                退出
+              </button>
+            ) : (
+              <Link
+                href="/login"
+                className="rounded-full bg-white/20 px-4 py-1.5 text-sm backdrop-blur transition hover:bg-white/30"
+              >
+                登录
+              </Link>
+            )}
           </div>
         </Card>
 
